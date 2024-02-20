@@ -1,0 +1,53 @@
+﻿ModeSensor: sensor.lyssensor
+HouseModeSensor: input_text.husmodus
+Data:
+- EntityId: light.dimmer_gang_oppe
+  MqttTopic: 'zigbee2mqtt/Dimmer gang oppe'
+  Modes:
+  - Name: DAG
+    Z2mData: '{ "state": "ON", "brightness":1,"transition":2}'
+  - Name: SKUMRING
+    Z2mData: '{ "state": "ON", "brightness":100,"transition":2}'   
+  - Name: NATT
+    Z2mData: '{ "state": "ON", "brightness":120,"transition":2}'    
+  - Name: AV
+    Z2mData: '{ "state": "OFF","transition":3}'   
+    Force: true
+- EntityId: light.dimmer_trapp
+  MqttTopic: 'zigbee2mqtt/Dimmer trapp'
+  Modes:
+  - Name: DAG
+    Z2mData: '{ "state": "ON", "brightness":50,"transition":2}'
+  - Name: SKUMRING
+    Z2mData: '{ "state": "ON", "brightness":80,"transition":2}'   
+  - Name: NATT
+    Z2mData: '{ "state": "ON", "brightness":120,"transition":2}'    
+  - Name: AV
+    Z2mData: '{ "state": "OFF", "transition": 2}'   
+    Force: true
+- EntityId: light.0x04cd15fffe0baf20
+  MqttTopic: 'zigbee2mqtt/Benkelys kjøkken'
+  Modes:
+  - Name: DAG
+    Z2mData: '{ "state": "ON", "brightness":60,"transition":2}'
+  - Name: SKUMRING
+    Z2mData: '{ "state": "ON", "brightness":100,"transition":2}'   
+  - Name: NATT
+    Z2mData: '{ "state": "ON", "brightness":87,"transition":2}'    
+  - Name: AV
+    Z2mData: '{ "state": "ON", "brightness":1, "transition": 2}'   
+    Force: true
+
+- EntityId: light.0x588e81fffe5b6db4
+  MqttTopic: 'zigbee2mqtt/Dimmer kjøkken'
+  Modes:
+  - Name: DAG
+    Z2mData: '{ "state": "ON", "brightness":60,"transition":2}'
+  - Name: SKUMRING
+    Z2mData: '{ "state": "ON", "brightness":100,"transition":2}'   
+  - Name: NATT
+    Z2mData: '{ "state": "ON", "brightness":87,"transition":2}'    
+  - Name: AV
+    Z2mData: '{ "state": "OFF", "transition": 2}'   
+    Force: true
+

@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "autolights": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development",
+        "DOTNET_USE_POLLING_FILE_WATCHER": "false",
+        "HOMEASSISTANT__TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5YmRjZmE3OWJmMDE0M2Q1YjQ2MTNjMGQ0M2Q3ODQ3YSIsImlhdCI6MTY4OTQxODY1NiwiZXhwIjoyMDA0Nzc4NjU2fQ.SOe6CyTbZ6aeyuT-n3pn_aSssNjC412rFugxxDQhqDw",
+        "HOMEASSISTANT__HOST": "192.168.1.226"
+      }
+    }
+  }
+}
