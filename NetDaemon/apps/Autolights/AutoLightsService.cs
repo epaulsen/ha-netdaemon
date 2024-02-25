@@ -1,5 +1,7 @@
 ﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 using MyNetDaemon.apps.Common;
 using MyNetDaemon.apps.config;
 using NetDaemon.Extensions.Scheduler;
@@ -7,7 +9,7 @@ using NetDaemon.Extensions.Scheduler;
 namespace MyNetDaemon.apps.Autolights;
 
 [NetDaemonApp]
-internal class AutoLightsService
+internal class AutoLightsService : IHostedService
 {
     private readonly IHaContext _ha;
     private readonly INetDaemonScheduler _scheduler;
@@ -17,6 +19,9 @@ internal class AutoLightsService
 
     private string _currentHouseMode = string.Empty;
     private string _currentLightMode = string.Empty;
+
+    private IDisposable? _houseModeSubscription;
+    private IDisposable? _lightModeSubscription;
 
     public AutoLightsService(
         IHaContext ha,
@@ -30,22 +35,33 @@ internal class AutoLightsService
         _z2MLightService = z2MLightService;
         _lightConfig = lightConfig;
         _logger = logger;
+        _lightConfig.SubscribeAsync(ConfigChangedAsync);
+    }
 
-        _currentHouseMode = _ha.Entity(_lightConfig.Config.HouseModeSensor).State ?? throw new ArgumentException($"House mode sensor '{_lightConfig.Config.HouseModeSensor}' not found.");
-        _currentLightMode = _ha.Entity(_lightConfig.Config.ModeSensor).State ?? throw new ArgumentException($"Light mode sensor '{_lightConfig.Config.HouseModeSensor}' not found.");
+    private async Task Setup()
+    {
+        _houseModeSubscription?.Dispose();
+        _lightModeSubscription?.Dispose();
 
-        _ha.Entity(_lightConfig.Config.HouseModeSensor).StateAllChanges().SubscribeAsyncConcurrent(async e =>
+        _currentHouseMode = _ha.Entity(_lightConfig.Config.HouseModeSensor).State ??
+                            throw new ArgumentException(
+                                $"House mode sensor '{_lightConfig.Config.HouseModeSensor}' not found.");
+        _currentLightMode = _ha.Entity(_lightConfig.Config.ModeSensor).State ??
+                            throw new ArgumentException(
+                                $"Light mode sensor '{_lightConfig.Config.HouseModeSensor}' not found.");
+
+        _houseModeSubscription = _ha.Entity(_lightConfig.Config.HouseModeSensor).StateAllChanges().SubscribeAsyncConcurrent(async e =>
         {
             if (e.New?.State == null)
             {
                 return;
             }
-                
+
             await HouseModeChangedAsync(e.New?.State);
         });
 
 
-        _ha.Entity(_lightConfig.Config.ModeSensor).StateAllChanges().SubscribeAsyncConcurrent(async e =>
+        _lightModeSubscription = _ha.Entity(_lightConfig.Config.ModeSensor).StateAllChanges().SubscribeAsyncConcurrent(async e =>
         {
             if (e.New?.State == null)
             {
@@ -55,7 +71,13 @@ internal class AutoLightsService
             await LightModeChangedAsync(e.New.State);
         });
 
-        HouseModeChangedAsync(_currentHouseMode).Wait();
+        await HouseModeChangedAsync(_currentHouseMode);
+    }
+
+    public Task ConfigChangedAsync(AutolightConfig config)
+    {
+        _logger.LogInformation("Config changed");
+        return Setup();
     }
 
     private async Task HouseModeChangedAsync(string? newMode)
@@ -100,5 +122,14 @@ internal class AutoLightsService
             }
         }
     }
+    
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await Setup();
+    }
 
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -13,41 +15,44 @@ using MyNetDaemon.apps.config;
 
 namespace MyNetDaemon.apps.Common;
 
-internal class MqttLightClient
+public record MqttMessage(string Topic, ArraySegment<byte> Payload);
+
+public class MqttLightClient
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<MqttLightClient> _logger;
-    private readonly AutolightConfigService _lightConfig;
     private readonly IMqttClient _client;
     private readonly MqttFactory _mqttFactory;
     private readonly MqttClientOptions _options;
-    private readonly LightStateStore _stateStore;
 
 
-    public MqttLightClient(IConfiguration configuration, AutolightConfigService lightConfig, ILogger<MqttLightClient> logger)
+    private readonly Subject<MqttMessage> _mqttMessages = new();
+
+    public IObservable<MqttMessage> Messages => _mqttMessages;
+
+    public MqttLightClient(IConfiguration configuration, ILogger<MqttLightClient> logger)
     {
         _configuration = configuration;
         _logger = logger;
-        _lightConfig = lightConfig;
-        
+
+
         var host = _configuration.GetValue<string>("HomeAssistant:Host") ?? throw new ApplicationException("Homeassistant host name not specified in configuration!!");
 
         _mqttFactory = new MqttFactory();
         _client = _mqttFactory.CreateMqttClient();
-
-        _stateStore = new LightStateStore(_lightConfig.Config.Data.Select(d => d.MqttTopic));
-
-        _client.ApplicationMessageReceivedAsync += (e) =>
+        
+        _client.ApplicationMessageReceivedAsync += async (e) =>
         {
             var topic = e.ApplicationMessage.Topic;
-            var entity = string.Join("/",topic.Split('/').Take(2));
+            var entity = string.Join("/", topic.Split('/').Take(2));
 
             if (!entity.StartsWith("zigbee2mqtt/"))
             {
                 logger.LogWarning($"Unexpected topic '{e.ApplicationMessage.Topic}', discarding.");
+                return;
             }
 
-            return _stateStore.ProcessMessageAsync(topic, e.ApplicationMessage.Payload);
+            _mqttMessages.OnNext(new MqttMessage(e.ApplicationMessage.Topic, e.ApplicationMessage.Payload));
         };
 
         _client.DisconnectedAsync += async (e) =>
@@ -58,23 +63,12 @@ internal class MqttLightClient
         };
 
         _options = new MqttClientOptionsBuilder().WithTcpServer(host, 1883).Build();
-
     }
 
-    public async Task<LightState> GetCurrentStateAsync(string z2mTopic)
+    public async Task PublishAsync(MqttApplicationMessage message)
     {
         await Ready.Task;
-        return await _stateStore.GetStateAsync(z2mTopic,QueryState)!;
-    }
-
-    private async Task QueryState(string z2mTopic)
-    {
-        var applicationMessage = new MqttApplicationMessageBuilder()
-            .WithTopic($"{z2mTopic}/get")
-            .WithPayload("{\"state\":\"\", \"brightness\": \"\"}"u8.ToArray())
-            .Build();
-
-        await _client.PublishAsync(applicationMessage, CancellationToken.None);
+        await _client.PublishAsync(message, CancellationToken.None);
     }
 
     public async Task SetState(LightConfig config, StateData state)
@@ -97,7 +91,20 @@ internal class MqttLightClient
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await _client.ConnectAsync(_options, cancellationToken);
+        bool success = false;
+        while (!success)
+        {
+            try
+            {
+                await _client.ConnectAsync(_options, cancellationToken);
+                success = true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning($"Unable to connect to mqtt, received error '{e.Message}'");
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            }
+        }
 
         var muttSubscription = _mqttFactory.CreateSubscribeOptionsBuilder()
             .WithTopicFilter(f =>
@@ -109,11 +116,7 @@ internal class MqttLightClient
         await _client.SubscribeAsync(muttSubscription, CancellationToken.None);
         Ready.SetResult();
         _logger.LogInformation("Connected to MQTT broker.  Querying lights for current state");
-        foreach (var topic in _lightConfig.Config.Data.Select(d => d.MqttTopic))
-        {
-            await QueryState(topic);
-        }
-
+        
         _logger.LogInformation("Finished");
     }
 

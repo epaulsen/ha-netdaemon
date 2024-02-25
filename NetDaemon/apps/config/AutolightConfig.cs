@@ -34,7 +34,7 @@ public class StateData
 
     public int? Transition { get; set; }
 
-    public TimeSpan OverrideDelay { get; set; } = TimeSpan.FromHours(1);
+    public TimeSpan OverrideTimeout { get; set; } = TimeSpan.FromHours(1);
 
     public bool Force { get; set; } = false;
 

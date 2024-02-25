@@ -25,6 +25,68 @@ public class Configuration
     }
 
     [Fact]
+    public void GenerateMotionConfigForKitchen()
+    {
+                var config = new MotionLightConfig();
+                config.Zones.Add("Kitchen", new MotionZoneConfig
+                {
+                    Sensors = new() { "zigbee2mqtt/bevegelse kjøkken" },
+
+                    Lights = new List<MotionLight>()
+                    {
+                        new MotionLight
+                        {
+                            Name = "zigbee2mqtt/Benkelys kjøkken",
+                            Modes = new List<MotionLightState>
+                            {
+                                new MotionLightState
+                                {
+                                    Name = "NATT",
+                                    OnState = "{ \"brightness_step\": 40,\"transition\":2}",
+                                    OffState = "{ \"brightness_step\": -40,\"transition\":2}",
+                                },
+
+                                new MotionLightState
+                                {
+                                    Name = "DAG",
+                                    OnState = "{ \"brightness_step\": 40,\"transition\":2}",
+                                    OffState = "{ \"brightness_step\": -40,\"transition\":2}",
+                                }
+
+                            }
+                        },
+                        new MotionLight
+                        {
+                        Name = "zigbee2mqtt/Dimmer kjøkken",
+                        Modes = new List<MotionLightState>
+                        {
+                            new MotionLightState
+                            {
+                                Name = "NATT",
+                                OnState = "{ \"brightness_step\": 40,\"transition\":2}",
+                                OffState = "{ \"brightness_step\": -40,\"transition\":2}",
+                            },
+                            new MotionLightState
+                            {
+                                Name = "DAG",
+                                OnState = "{ \"brightness_step\": 40,\"transition\":2}",
+                                OffState = "{ \"brightness_step\": -40,\"transition\":2}",
+                            }
+                        }
+                    }
+                    }
+                });
+
+        var serializer = new SerializerBuilder()
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .Build();
+
+        var yaml = serializer.Serialize(config);
+        yaml.Should().NotBeNullOrEmpty();
+    }
+
+
+    [Fact]
     public async Task ConfigReaderTest_Reload()
     {
         var sp = GetServiceProvider();

@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MyNetDaemon.apps.Autolights;
 using MyNetDaemon.apps.Common;
 using MyNetDaemon.apps.config;
 using NetDaemon.Extensions.Logging;
@@ -25,6 +26,7 @@ try
                 .AddNetDaemonStateManager()
                 .AddScoped<Z2mLightService>()
                 .AddSingleton<MqttLightClient>()
+                .AddSingleton<LightStateStore>()
                 .AddHostedService<CurrentLightMqttBackgroundService>()
                 .AddConfigService<AutolightConfigService, AutolightConfig>("autolights.yaml")
                 .AddNetDaemonScheduler()

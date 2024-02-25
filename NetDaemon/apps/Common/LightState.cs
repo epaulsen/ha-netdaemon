@@ -29,7 +29,7 @@ public class LightState : IEquatable<LightState>
             return false;
         }
 
-        if (Math.Abs(Brightness - other.Brightness) > 2)
+        if (Math.Abs(Brightness - other.Brightness) > 5)
         {
             return false;
         }

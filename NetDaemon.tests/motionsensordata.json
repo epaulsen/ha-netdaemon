@@ -1,0 +1,11 @@
+{
+  "battery": 100,
+  "device_temperature": 28,
+  "illuminance": 12,
+  "illuminance_lux": 12,
+  "last_seen": "2024-02-21T18:54:40+01:00",
+  "linkquality": 255,
+  "occupancy": true,
+  "power_outage_count": 18,
+  "voltage": 3015
+}

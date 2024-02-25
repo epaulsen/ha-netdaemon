@@ -15,55 +15,55 @@ namespace MyNetDaemon.apps.Common;
 
 internal class Z2mLightService
 {
-    private readonly MqttLightClient _lightStateService;
+    private readonly MqttLightClient _mqttClient;
     private readonly Dictionary<string, LightData> _lightStateData = new();
+    private readonly LightStateStore _lightStateStore;
     private readonly IHaContext _ha;
     private readonly INetDaemonScheduler _scheduler;
     private readonly ILogger<Z2mLightService> _logger;
 
-    public Z2mLightService(IHaContext ha, INetDaemonScheduler scheduler, ILogger<Z2mLightService> logger, MqttLightClient lightStateService)
+    public Z2mLightService(IHaContext ha, INetDaemonScheduler scheduler, ILogger<Z2mLightService> logger, MqttLightClient mqttClient, LightStateStore lightStateStore)
     {
         _ha = ha;
         _scheduler = scheduler;
         _logger = logger;
-        _lightStateService = lightStateService;
+        _mqttClient = mqttClient;
+        _lightStateStore = lightStateStore;
     }
 
     public async Task SetState(LightConfig config, StateData state, bool force = false)
     {
-        //var state = config.Modes.SingleOrDefault(m => m.Name.Equals(lightMode, StringComparison.InvariantCultureIgnoreCase));
         if (force)
         {
-            TurnOnInternal(config, state);
+            await TurnOnInternalAsync(config, state);
             return;
         }
 
-        var z2mState = await _lightStateService.GetCurrentStateAsync(config.MqttTopic);
-            
-
+        var z2mState = await _lightStateStore.GetStateAsync(config.MqttTopic);
+        
         if (_lightStateData.TryGetValue(config.EntityId, out var storedStateData))
         {
             if (!storedStateData.State.Equals(z2mState))
             {
-                _logger.LogInformation("Light {lightEntityId} will not be changed, this has been changed manually.  Action is deferred for {overrideDelay}.", config.EntityId, state.OverrideDelay);
+                _logger.LogInformation("Light {lightEntityId} will not be changed, this has been changed manually.  Action is deferred for {overrideDelay}.", config.EntityId, state.OverrideTimeout);
                 storedStateData.DeferredAction?.Dispose();
 
                 async void DeferredAction()
                 {
-                    await TurnOnInternal(config, state);
+                    await TurnOnInternalAsync(config, state);
                 }
 
-                storedStateData.DeferredAction = _scheduler.RunIn(state.OverrideDelay, DeferredAction);
+                storedStateData.DeferredAction = _scheduler.RunIn(state.OverrideTimeout, DeferredAction);
                 return;
             }
         }
 
-        await TurnOnInternal(config, state);
+        await TurnOnInternalAsync(config, state);
     }
 
-    private async Task TurnOnInternal(LightConfig config, StateData state)
+    private async Task TurnOnInternalAsync(LightConfig config, StateData state)
     {
-        await _lightStateService.SetState(config, state);
+        await _mqttClient.SetState(config, state);
         var z2mState = JsonSerializer.Deserialize<LightState>(state.Z2mData!)!;
         _lightStateData[config.EntityId!] = new LightData { State = z2mState };
             

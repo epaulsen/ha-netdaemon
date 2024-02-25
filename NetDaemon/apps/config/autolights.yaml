@@ -5,13 +5,25 @@ Data:
   MqttTopic: 'zigbee2mqtt/Dimmer gang oppe'
   Modes:
   - Name: DAG
-    Z2mData: '{ "state": "ON", "brightness":1,"transition":2}'
+    Z2mData: '{ "state": "ON", "brightness":5,"transition":2}'
   - Name: SKUMRING
     Z2mData: '{ "state": "ON", "brightness":100,"transition":2}'   
   - Name: NATT
     Z2mData: '{ "state": "ON", "brightness":120,"transition":2}'    
   - Name: AV
     Z2mData: '{ "state": "OFF","transition":3}'   
+    Force: true
+- EntityId: light.dimmer_yttergang
+  MqttTopic: 'zigbee2mqtt/Dimmer yttergang'
+  Modes:
+  - Name: DAG
+    Z2mData: '{ "state": "ON", "brightness":5,"transition":2}'
+  - Name: SKUMRING
+    Z2mData: '{ "state": "ON", "brightness":50,"transition":2}'   
+  - Name: NATT
+    Z2mData: '{ "state": "ON", "brightness":100,"transition":2}'    
+  - Name: AV
+    Z2mData: '{ "state": "ON", "brightness":1,"transition":2}'   
     Force: true
 - EntityId: light.dimmer_trapp
   MqttTopic: 'zigbee2mqtt/Dimmer trapp'
